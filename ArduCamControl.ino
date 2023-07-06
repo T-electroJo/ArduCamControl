@@ -20,7 +20,7 @@ bool writing_mode = false;
 bool delete_mode = false;
 
 
-bool checkFrequencies = false;
+bool checkFrequencies = false; // Configuration mode, more on github: https://github.com/T-electroJo/ArduCamControl
 
 
 Servo pan;
@@ -36,19 +36,16 @@ void setup() {
   tilt.attach(servo_tilt_pin); // Enable Servo for Tilt
   move_servos(); // Apply movement
   if (checkFrequencies) {
-    Serial.begin(9600);
+    Serial.begin(9600); // Open Serial monitor if configure mode is enabled
   }
 }
 
 void loop() {
   if (irrecv.decode(&results) && !checkFrequencies) {
-    result = String(results.value, HEX).substring(2);
+    result = String(results.value, HEX).substring(2); // Take the last 2 digits from the HEX-String of the IR code.
     
     if (result == remote_UP) {
-      if (writing_mode || delete_mode) {
-        writing_mode = false;
-        delete_mode = false;
-      }
+      write_delete_check()
       if (tilt_pos < tilt_max) {
         tilt_pos++;
         if (highspeed && tilt_pos < tilt_max-4) {
@@ -57,10 +54,7 @@ void loop() {
       }
     }
     else if (result == remote_DOWN) {
-      if (writing_mode || delete_mode) {
-        writing_mode = false;
-        delete_mode = false;
-      }
+      write_delete_check()
       if (tilt_pos > 0) {
         tilt_pos--;
         if (highspeed && tilt_pos > 4) {
@@ -69,10 +63,7 @@ void loop() {
       }
     }
     else if (result == remote_LEFT) {
-      if (writing_mode || delete_mode) {
-        writing_mode = false;
-        delete_mode = false;
-      }
+      write_delete_check()
       if (pan_pos < 180) {
         pan_pos++;
         if (highspeed && pan_pos < 176) {
@@ -81,10 +72,7 @@ void loop() {
       }
     }
     else if (result == remote_RIGHT) {
-      if (writing_mode || delete_mode) {
-        writing_mode = false;
-        delete_mode = false;
-      }
+      write_delete_check()
       if (pan_pos > 0) {
         pan_pos--;
         if (highspeed && pan_pos > 4) {
@@ -93,26 +81,17 @@ void loop() {
       }
     }
     else if (result == remote_HOME) {
-      if (writing_mode || delete_mode) {
-        writing_mode = false;
-        delete_mode = false;
-      }
+      write_delete_check()
       pan_pos = default_pan_pos;
       tilt_pos = default_tilt_pos;
     }
     else if (result == remote_SPEED) {
-      if (writing_mode || delete_mode) {
-        writing_mode = false;
-        delete_mode = false;
-      }
+      write_delete_check()
       highspeed = !highspeed;
       delay(500);
     }
     else if (result == remote_DISABLE) {
-      if (writing_mode || delete_mode) {
-        writing_mode = false;
-        delete_mode = false;
-      }
+      write_delete_check()
       if (pan.attached() || tilt.attached()) {
         pan.detach();
         tilt.detach();
@@ -351,5 +330,12 @@ void move_servos() {
   }
   if (tilt.attached()) {
     tilt.write(tilt_pos);
+  }
+}
+
+void write_delete_check() {
+  if (writing_mode || delete_mode) {
+    writing_mode = false;
+    delete_mode = false;
   }
 }
