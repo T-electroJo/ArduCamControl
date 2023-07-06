@@ -19,6 +19,10 @@ bool highspeed = false;
 bool writing_mode = false;
 bool delete_mode = false;
 
+
+bool checkFrequencies = false;
+
+
 Servo pan;
 Servo tilt;
 IRrecv irrecv(ir_pin);
@@ -31,10 +35,13 @@ void setup() {
   pan.attach(servo_pan_pin); // Enable Servo for Pan
   tilt.attach(servo_tilt_pin); // Enable Servo for Tilt
   move_servos(); // Apply movement
+  if (checkFrequencies) {
+    Serial.begin(9600);
+  }
 }
 
 void loop() {
-  if (irrecv.decode(&results)) {
+  if (irrecv.decode(&results) && !checkFrequencies) {
     result = String(results.value, HEX).substring(2);
     
     if (result == remote_UP) {
@@ -330,6 +337,11 @@ void loop() {
 
     move_servos();
     irrecv.resume();
+  } else {
+    if (irrecv.decode(&results)) {
+      result = String(results.value, HEX).substring(2);
+      Serial.println(result);
+    }
   }
 }
 
