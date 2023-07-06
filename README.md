@@ -47,7 +47,7 @@ A arduino-project that allows you to control a self made servo platform via IR.
 
 ##### **Speed:**
 - Toggles the manual movement speed between 1x/4x
-- [Planned] control movement speed of automatic mode (shortcuts)
+- **[Planned]** control movement speed of automatic mode (shortcuts)
 
 ##### **Program:**
 - Sets the arduino into programming mode
