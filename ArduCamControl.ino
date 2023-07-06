@@ -22,14 +22,15 @@ bool delete_mode = false;
 Servo pan;
 Servo tilt;
 IRrecv irrecv(ir_pin);
+
 decode_results results;
 String result;
 
 void setup() {
-  irrecv.enableIRIn();
-  pan.attach(servo_pan_pin);
-  tilt.attach(servo_tilt_pin);
-  move_servos();
+  irrecv.enableIRIn(); // Enable IR Input
+  pan.attach(servo_pan_pin); // Enable Servo for Pan
+  tilt.attach(servo_tilt_pin); // Enable Servo for Tilt
+  move_servos(); // Apply movement
 }
 
 void loop() {
@@ -84,7 +85,7 @@ void loop() {
         }
       }
     }
-    else if (result == remote_SOURCE) {
+    else if (result == remote_HOME) {
       if (writing_mode || delete_mode) {
         writing_mode = false;
         delete_mode = false;
@@ -92,7 +93,7 @@ void loop() {
       pan_pos = default_pan_pos;
       tilt_pos = default_tilt_pos;
     }
-    else if (result == remote_MINIMIZE) {
+    else if (result == remote_SPEED) {
       if (writing_mode || delete_mode) {
         writing_mode = false;
         delete_mode = false;
@@ -100,7 +101,7 @@ void loop() {
       highspeed = !highspeed;
       delay(500);
     }
-    else if (result == remote_TV) {
+    else if (result == remote_DISABLE) {
       if (writing_mode || delete_mode) {
         writing_mode = false;
         delete_mode = false;
@@ -114,12 +115,12 @@ void loop() {
       }
       delay(500);
     }
-    else if (result == remote_MUTE) {
+    else if (result == remote_DELETE) {
       if (writing_mode) {
         delete_mode = true;
       }
     }
-    else if (result == remote_RADIO) {
+    else if (result == remote_PROGRAM) {
       writing_mode = !writing_mode;
       delay(500);
     }
