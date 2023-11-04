@@ -20,7 +20,6 @@ bool highspeed = false;
 bool writing_mode = false;
 bool delete_mode = false;
 
-
 bool checkFrequencies = false; // Configuration mode, more on github: https://github.com/T-electroJo/ArduCamControl
 
 
