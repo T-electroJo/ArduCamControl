@@ -1,28 +1,29 @@
 // USED
 
-#define remote_UP "20"
-#define remote_DOWN "21"
-#define remote_LEFT "11"
-#define remote_RIGHT "10"
+#define remote_UP "32" // UP
+#define remote_DOWN "33" //DOWN
+#define remote_LEFT "17" // LEFT
+#define remote_RIGHT "16" // RIGHT
 
-#define remote_DISABLE "0f"
-#define remote_PROGRAM "0c"
-#define remote_DELETE "0d"
-#define remote_HOME "22"
-#define remote_SPEED "26"
+#define remote_PROGRAM "12" //RADIO
+#define remote_DELETE "13" // MUTE
+#define remote_HOME "34" // SOURCE
+#define remote_SPEED "38" // MINIMIZE
 
-#define remote_ONE "01"
-#define remote_TWO "02"
-#define remote_THREE "03"
-#define remote_FOUR "04"
-#define remote_FIVE "05"
-#define remote_SIX "06"
-#define remote_SEVEN "07"
-#define remote_EIGHT "08"
-#define remote_NINE "09"
-#define remote_ZERO "00"
+#define remote_ONE "1"
+#define remote_TWO "2"
+#define remote_THREE "3"
+#define remote_FOUR "4"
+#define remote_FIVE "5"
+#define remote_SIX "6"
+#define remote_SEVEN "7"
+#define remote_EIGHT "8"
+#define remote_NINE "9"
+#define remote_ZERO "0"
+
+#define remote_OK "46" // FULL SCREEN
 
 // NOT USED
 
-#define remote_OK "2e"
-#define remote_RESERVED "1e"
+#define remote_DISABLE "15" // TV
+#define remote_RESERVED "30" // RESERVED

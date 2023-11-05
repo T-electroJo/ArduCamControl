@@ -1,4 +1,4 @@
-#include <IRremote.h>
+#include <IRremote.hpp>
 #include <Servo.h>
 #include <EEPROM.h>
 
@@ -15,7 +15,14 @@ int tilt_pos;
 int old_pan_pos;
 int old_tilt_pos;
 const int tilt_max = 150;
+const int disable_time = 5000; // Servo disable time in milliseconds after last move.
+unsigned long lastmillis = 0;
+const int automatic_pan_slow_skips = 50;
+int automatic_pan_slow_skipped = 0;
 
+bool automatic_pan_dir = false;
+bool automatic_pan = false;
+bool disable_servos = false;
 bool highspeed = false;
 bool writing_mode = false;
 bool delete_mode = false;
@@ -25,17 +32,13 @@ bool checkFrequencies = false; // Configuration mode, more on github: https://gi
 
 Servo pan;
 Servo tilt;
-IRrecv irrecv(ir_pin);
 
-decode_results results;
 String result;
 
 void setup() {
   Serial.begin(9600);
   Serial.println("Setup begin...");
-  irrecv.enableIRIn(); // Enable IR Input
-  pan.attach(servo_pan_pin); // Enable Servo for Pan
-  tilt.attach(servo_tilt_pin); // Enable Servo for Tilt
+  IrReceiver.begin(ir_pin, ENABLE_LED_FEEDBACK); // Enable IR Input with LED_BUILTIN as receive indicator
 
   int pan_value = EEPROM.read(8);
   int tilt_value = EEPROM.read(9);
@@ -56,9 +59,55 @@ void setup() {
 }
 
 void loop() {
-  if (irrecv.decode(&results) && !checkFrequencies) {
-    result = String(results.value, HEX).substring(2); // Take the last 2 digits from the HEX-String of the IR code.
-    
+  if (disable_servos) {
+    if (millis() - lastmillis > disable_time) {
+      disable_servos = false;
+      if (pan.attached()) {
+        pan.detach();
+      }
+      if (tilt.attached()) {
+        tilt.detach();
+      }
+      Serial.println("--------- Servos deactivated ---------");
+      lastmillis = millis();
+    }
+  }
+  if (automatic_pan) {
+    if (automatic_pan_dir) {
+      if (pan_pos > 0) {
+        if (highspeed) {
+          pan_pos--;
+        } else {
+          if (automatic_pan_slow_skipped < automatic_pan_slow_skips) {
+            automatic_pan_slow_skipped++;
+          } else {
+            automatic_pan_slow_skipped = 0;
+            pan_pos--;
+          }
+        }
+      } else {
+        automatic_pan_dir = false;
+      }
+    } else {
+      if (pan_pos < 180) {
+        if (highspeed) {
+          pan_pos++;
+        } else {
+          if (automatic_pan_slow_skipped < automatic_pan_slow_skips) {
+            automatic_pan_slow_skipped++;
+          } else {
+            automatic_pan_slow_skipped = 0;
+            pan_pos++;
+          }
+        }
+      } else {
+        automatic_pan_dir = true;
+      }
+    }
+    move_servos();
+  }
+  if (IrReceiver.decode() && !checkFrequencies) {
+    result = IrReceiver.decodedIRData.command;
     if (result == remote_UP) {
       write_delete_check();
       if (tilt_pos < tilt_max) {
@@ -97,8 +146,8 @@ void loop() {
     }
     else if (result == remote_HOME) {
       write_delete_check();
-      pan_pos = default_pan_pos;
-      tilt_pos = default_tilt_pos;
+      pan_pos = 90;
+      tilt_pos = 90;
     }
     else if (result == remote_SPEED) {
       write_delete_check();
@@ -130,26 +179,8 @@ void loop() {
       delay(500);
     }
     else if (result == remote_OK) {
-      if (writing_mode && delete_mode) {
-        EEPROM.write(8, 255);
-        EEPROM.write(9, 255);
-        writing_mode = false;
-        delete_mode = false;
-        delay(500);
-      }
-      else if (writing_mode) {
-        EEPROM.write(8, pan_pos);
-        EEPROM.write(9, tilt_pos);
-        writing_mode = false;
-        delay(500);
-      } else {
-        byte pan_value = EEPROM.read(8);
-        byte tilt_value = EEPROM.read(9);
-        if (pan_value <= 180 && tilt_value <= tilt_max) {
-          pan_pos = pan_value;
-          tilt_pos = tilt_value;
-        }
-      }
+      automatic_pan = !automatic_pan;
+      delay(500);
     }
     else if (result == remote_ZERO) {
       if (writing_mode && delete_mode) {
@@ -374,44 +405,37 @@ void loop() {
     if (!writing_mode && delete_mode) {
       delete_mode = false;
     }
-
     move_servos();
-    irrecv.resume();
+    IrReceiver.resume();
   } else if (checkFrequencies) {
-    if (irrecv.decode(&results)) {
-      result = String(results.value, HEX).substring(2);
-      Serial.println(result);
+    if (IrReceiver.decode()) {
+      Serial.println(IrReceiver.decodedIRData.command);
     }
   }
 }
 
 void move_servos() {
-  if (pan_pos > 180) {
-    Serial.print("Pan overdrive: ");
-    Serial.println(pan_pos);
-    pan_pos = 180;
-  }
-  if (tilt_pos > tilt_max) {
-    Serial.print("Tilt overdrive: ");
-    Serial.print(tilt_pos);
-    Serial.print(">");
-    Serial.println(tilt_max);
-    tilt_pos = tilt_max;
-  }
-  if (pan.attached() && old_pan_pos != pan_pos) {
+  if (old_pan_pos != pan_pos) {
+    pan.attached() ?: pan.attach(servo_pan_pin);
     Serial.print("Moving pan to ");
     Serial.print(pan_pos);
     Serial.println("°");
     pan.write(pan_pos);
-    old_pan_pos = pan_pos;
   }
-  if (tilt.attached() && old_tilt_pos != tilt_pos) {
+  if (old_tilt_pos != tilt_pos) {
+    tilt.attached() ?: tilt.attach(servo_tilt_pin);
     Serial.print("Moving tilt to ");
     Serial.print(tilt_pos);
     Serial.println("°");
     tilt.write(tilt_pos);
-    old_tilt_pos = tilt_pos;
   }
+  if (old_pan_pos != pan_pos || old_tilt_pos != tilt_pos) {
+    disable_servos = true;
+    lastmillis = millis();
+  }
+
+  old_pan_pos = pan_pos;
+  old_tilt_pos = tilt_pos;
 }
 
 void write_delete_check() {
